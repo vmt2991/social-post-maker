@@ -72,12 +72,11 @@
     margin-top: 6px;
   }
   .avatar-option {
+    width: 100%;
     aspect-ratio: 1;
     border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 34px;
+    object-fit: cover;
+    display: block;
     cursor: pointer;
     border: 3px solid transparent;
     transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease;
@@ -89,14 +88,6 @@
     box-shadow: 0 0 0 3px rgba(24,119,242,.25);
     transform: scale(1.05);
   }
-  .av-1 { background: linear-gradient(135deg, #f6d365, #fda085); }
-  .av-2 { background: linear-gradient(135deg, #84fab0, #8fd3f4); }
-  .av-3 { background: linear-gradient(135deg, #fda085, #f6d365); }
-  .av-4 { background: linear-gradient(135deg, #a1c4fd, #c2e9fb); }
-  .av-5 { background: linear-gradient(135deg, #ff9a9e, #fecfef); }
-  .av-6 { background: linear-gradient(135deg, #ffecd2, #fcb69f); }
-  .av-7 { background: linear-gradient(135deg, #b0f3a5, #7ee8a2); }
-  .av-8 { background: linear-gradient(135deg, #d4a5ff, #a18cd1); }
   .avatar-name { text-align: center; font-size: 11px; color: #65676b; margin-top: 4px; }
   .avatar-cell { text-align: center; }
 
@@ -141,9 +132,13 @@
   .post-avatar {
     width: 48px; height: 48px;
     border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 28px;
+    overflow: hidden;
     flex-shrink: 0;
+  }
+  .post-avatar img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
   }
   .post-name { font-weight: 700; font-size: 15px; line-height: 1.3; }
   .post-meta { font-size: 13px; color: #65676b; line-height: 1.4; }
@@ -188,9 +183,10 @@
 
     <label>Chọn avatar</label>
     <div class="avatar-grid" id="avatarGrid"></div>
+    <div class="hint">Ảnh avatar là file PNG trong thư mục <b>avatars/</b> của repo. Chọn ảnh nào thì ô nickname tự điền nickname tương ứng, bạn vẫn sửa lại được.</div>
 
     <label for="nickname">Nickname</label>
-    <input type="text" id="nickname" placeholder="Ví dụ: Yatogami" maxlength="50" autocomplete="off">
+    <input type="text" id="nickname" placeholder="Ví dụ: Yatogami" maxlength="50" autocomplete="off" value="Minh Anh">
 
     <label for="location">Địa điểm</label>
     <input type="text" id="location" placeholder="Ví dụ: Tokyo, Nhật Bản" maxlength="80" autocomplete="off">
@@ -213,7 +209,7 @@
       <h2 style="margin-bottom: 12px;">2. Xem trước bài post</h2>
       <div class="post-card" id="postCard">
         <div class="post-header">
-          <div class="post-avatar av-1" id="previewAvatar">😀</div>
+          <div class="post-avatar"><img id="previewAvatarImg" src="avatars/avatar-1.png" alt="Avatar"></div>
           <div>
             <div class="post-name" id="previewName">Nickname của bạn</div>
             <div class="post-meta" id="previewMeta">Vừa xong</div>
@@ -238,15 +234,17 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
+  // Danh sách avatar: mỗi ảnh PNG trong thư mục avatars/ gắn với 1 nickname.
+  // Muốn đổi ảnh hoặc nickname thì thay file trong avatars/ và sửa dòng tương ứng ở đây.
   var AVATARS = [
-    { emoji: "😀", cls: "av-1", name: "Vui vẻ" },
-    { emoji: "😎", cls: "av-2", name: "Ngầu" },
-    { emoji: "🦊", cls: "av-3", name: "Cáo" },
-    { emoji: "🐼", cls: "av-4", name: "Gấu trúc" },
-    { emoji: "🐱", cls: "av-5", name: "Mèo" },
-    { emoji: "🦁", cls: "av-6", name: "Sư tử" },
-    { emoji: "🐸", cls: "av-7", name: "Ếch" },
-    { emoji: "🦄", cls: "av-8", name: "Kỳ lân" }
+    { src: "avatars/avatar-1.png", nickname: "Minh Anh" },
+    { src: "avatars/avatar-2.png", nickname: "Quốc Bảo" },
+    { src: "avatars/avatar-3.png", nickname: "Thu Hằng" },
+    { src: "avatars/avatar-4.png", nickname: "Đức Anh" },
+    { src: "avatars/avatar-5.png", nickname: "Lan Chi" },
+    { src: "avatars/avatar-6.png", nickname: "Hoàng Nam" },
+    { src: "avatars/avatar-7.png", nickname: "Phương Thảo" },
+    { src: "avatars/avatar-8.png", nickname: "Tuấn Kiệt" }
   ];
   var selectedAvatar = AVATARS[0];
 
@@ -254,21 +252,25 @@
   AVATARS.forEach(function (av, i) {
     var cell = document.createElement("div");
     cell.className = "avatar-cell";
-    var opt = document.createElement("div");
-    opt.className = "avatar-option " + av.cls + (i === 0 ? " selected" : "");
-    opt.textContent = av.emoji;
-    opt.title = av.name;
+    var opt = document.createElement("img");
+    opt.className = "avatar-option" + (i === 0 ? " selected" : "");
+    opt.src = av.src;
+    opt.alt = av.nickname;
+    opt.title = av.nickname;
     opt.addEventListener("click", function () {
       selectedAvatar = av;
       document.querySelectorAll(".avatar-option").forEach(function (el) {
         el.classList.remove("selected");
       });
       opt.classList.add("selected");
+      // Chọn ảnh nào thì ô nickname tự điền nickname tương ứng;
+      // người dùng vẫn sửa lại nickname trong ô được.
+      document.getElementById("nickname").value = av.nickname;
       updatePreview();
     });
     var name = document.createElement("div");
     name.className = "avatar-name";
-    name.textContent = av.name;
+    name.textContent = av.nickname;
     cell.appendChild(opt);
     cell.appendChild(name);
     grid.appendChild(cell);
@@ -280,9 +282,9 @@
     var time = document.getElementById("time").value.trim();
     var caption = document.getElementById("caption").value;
 
-    var avatarEl = document.getElementById("previewAvatar");
-    avatarEl.textContent = selectedAvatar.emoji;
-    avatarEl.className = "post-avatar " + selectedAvatar.cls;
+    var avatarImg = document.getElementById("previewAvatarImg");
+    avatarImg.src = selectedAvatar.src;
+    avatarImg.alt = selectedAvatar.nickname;
 
     document.getElementById("previewName").textContent =
       nickname || "Nickname của bạn";
@@ -307,7 +309,7 @@
   });
 
   document.getElementById("resetBtn").addEventListener("click", function () {
-    document.getElementById("nickname").value = "";
+    document.getElementById("nickname").value = AVATARS[0].nickname;
     document.getElementById("location").value = "";
     document.getElementById("time").value = "";
     document.getElementById("caption").value = "";
